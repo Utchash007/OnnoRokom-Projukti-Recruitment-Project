@@ -6,3 +6,6 @@ skills-lock.json
 .env
 .env.*
 !.env.example
+
+# Generated EF Core migrations
+Backend/OnnorokomBackend/Migrations/
