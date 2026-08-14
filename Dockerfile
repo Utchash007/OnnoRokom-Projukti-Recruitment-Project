@@ -52,10 +52,6 @@ COPY --from=frontend-builder /app/public /app/frontend/public
 COPY --from=frontend-builder /app/.next/standalone /app/frontend/
 COPY --from=frontend-builder /app/.next/static /app/frontend/.next/static
 
-# Copy and setup start script
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
 # Environment settings
 ENV ASPNETCORE_URLS=http://+:5000
 ENV ASPNETCORE_ENVIRONMENT=Production
@@ -66,4 +62,5 @@ ENV PORT=3000
 
 EXPOSE 3000 5000
 
-CMD ["/app/start.sh"]
+# Direct inline command: launches backend in background and frontend in foreground
+CMD ["/bin/bash", "-c", "cd /app/backend && dotnet OnnoRokomBackend.dll & cd /app/frontend && PORT=${PORT:-3000} node server.js"]
