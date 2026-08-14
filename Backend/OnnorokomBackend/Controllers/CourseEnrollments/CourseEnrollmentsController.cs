@@ -8,10 +8,11 @@ namespace OnnoRokomBackend.Controllers.CourseEnrollments;
 
 [ApiController]
 [Route("api/course-enrollments")]
-[Authorize(Roles = nameof(UserRole.Admin))]
+[Authorize]
 public class CourseEnrollmentsController(ICourseEnrollmentService courseEnrollmentService) : ControllerBase, ICourseEnrollmentController
 {
     [HttpGet("courses/{courseId:guid}/students")]
+    [Authorize(Roles = $"{nameof(UserRole.Admin)},{nameof(UserRole.Teacher)}")]
     public async Task<IActionResult> GetCourseStudents([FromRoute] Guid courseId, CancellationToken ct = default)
     {
         var students = await courseEnrollmentService.GetCourseStudentsAsync(courseId, ct);
@@ -26,6 +27,7 @@ public class CourseEnrollmentsController(ICourseEnrollmentService courseEnrollme
     }
 
     [HttpPost]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> EnrollStudents([FromBody] EnrollStudentsRequest request, CancellationToken ct = default)
     {
         var enrolledStudents = await courseEnrollmentService.EnrollStudentsAsync(request, ct);
@@ -33,6 +35,7 @@ public class CourseEnrollmentsController(ICourseEnrollmentService courseEnrollme
     }
 
     [HttpPatch("{enrollmentId:guid}/status")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> SetStatus([FromRoute] Guid enrollmentId, [FromBody] SetCourseEnrollmentStatusRequest request, CancellationToken ct = default)
     {
         var success = await courseEnrollmentService.SetCourseEnrollmentStatusAsync(enrollmentId, request, ct);

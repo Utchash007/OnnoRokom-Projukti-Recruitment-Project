@@ -8,7 +8,7 @@ namespace OnnoRokomBackend.Controllers.Batches;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(UserRole.Admin))]
+[Authorize]
 public class BatchesController(IBatchService batchService) : ControllerBase, IBatchController
 {
     [HttpGet]
@@ -36,6 +36,7 @@ public class BatchesController(IBatchService batchService) : ControllerBase, IBa
     }
 
     [HttpPost]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Create([FromBody] CreateBatchRequest request, CancellationToken ct = default)
     {
         var createdBatch = await batchService.CreateBatchAsync(request, ct);
@@ -43,6 +44,7 @@ public class BatchesController(IBatchService batchService) : ControllerBase, IBa
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateBatchRequest request, CancellationToken ct = default)
     {
         var updatedBatch = await batchService.UpdateBatchAsync(id, request, ct);
@@ -60,6 +62,7 @@ public class BatchesController(IBatchService batchService) : ControllerBase, IBa
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken ct = default)
     {
         var success = await batchService.DeleteBatchAsync(id, ct);
@@ -77,6 +80,7 @@ public class BatchesController(IBatchService batchService) : ControllerBase, IBa
     }
 
     [HttpGet("{id:guid}/students")]
+    [Authorize(Roles = $"{nameof(UserRole.Admin)},{nameof(UserRole.Teacher)}")]
     public async Task<IActionResult> GetStudents([FromRoute] Guid id, CancellationToken ct = default)
     {
         var students = await batchService.GetBatchStudentsAsync(id, ct);
@@ -84,6 +88,7 @@ public class BatchesController(IBatchService batchService) : ControllerBase, IBa
     }
 
     [HttpPost("{id:guid}/students")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> AssignStudent([FromRoute] Guid id, [FromBody] AssignStudentRequest request, CancellationToken ct = default)
     {
         var enrollment = await batchService.AssignStudentAsync(id, request, ct);
@@ -91,6 +96,7 @@ public class BatchesController(IBatchService batchService) : ControllerBase, IBa
     }
 
     [HttpPatch("{id:guid}/enrollments/{enrollmentId:guid}/status")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> SetStudentEnrollmentStatus(
         [FromRoute] Guid id,
         [FromRoute] Guid enrollmentId,

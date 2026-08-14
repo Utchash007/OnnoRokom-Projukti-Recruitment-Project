@@ -8,7 +8,7 @@ namespace OnnoRokomBackend.Controllers.TeacherCourseAllocations;
 
 [ApiController]
 [Route("api/teacher-allocations")]
-[Authorize(Roles = nameof(UserRole.Admin))]
+[Authorize]
 public class TeacherCourseAllocationsController(ITeacherCourseAllocationService allocationService) : ControllerBase, ITeacherCourseAllocationController
 {
     [HttpGet("courses/{courseId:guid}/teachers")]
@@ -26,6 +26,7 @@ public class TeacherCourseAllocationsController(ITeacherCourseAllocationService 
     }
 
     [HttpPost]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> AllocateTeacher([FromBody] AllocateTeacherRequest request, CancellationToken ct = default)
     {
         var allocation = await allocationService.AllocateTeacherAsync(request, ct);
@@ -33,6 +34,7 @@ public class TeacherCourseAllocationsController(ITeacherCourseAllocationService 
     }
 
     [HttpPatch("{allocationId:guid}/status")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> SetStatus([FromRoute] Guid allocationId, [FromBody] SetAllocationStatusRequest request, CancellationToken ct = default)
     {
         var success = await allocationService.SetTeacherCourseAllocationStatusAsync(allocationId, request, ct);

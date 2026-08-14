@@ -8,7 +8,7 @@ namespace OnnoRokomBackend.Controllers.Courses;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(UserRole.Admin))]
+[Authorize]
 public class CoursesController(ICourseService courseService) : ControllerBase, ICourseController
 {
     [HttpGet]
@@ -36,6 +36,7 @@ public class CoursesController(ICourseService courseService) : ControllerBase, I
     }
 
     [HttpPost]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Create([FromBody] CreateCourseRequest request, CancellationToken ct = default)
     {
         var createdCourse = await courseService.CreateCourseAsync(request, ct);
@@ -43,6 +44,7 @@ public class CoursesController(ICourseService courseService) : ControllerBase, I
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateCourseRequest request, CancellationToken ct = default)
     {
         var updatedCourse = await courseService.UpdateCourseAsync(id, request, ct);
@@ -60,6 +62,7 @@ public class CoursesController(ICourseService courseService) : ControllerBase, I
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken ct = default)
     {
         var success = await courseService.DeleteCourseAsync(id, ct);

@@ -8,7 +8,7 @@ namespace OnnoRokomBackend.Controllers.AcademicTerms;
 
 [ApiController]
 [Route("api/academic-terms")]
-[Authorize(Roles = nameof(UserRole.Admin))]
+[Authorize]
 public class AcademicTermsController(IAcademicTermService academicTermService) : ControllerBase, IAcademicTermsController
 {
     [HttpGet]
@@ -36,6 +36,7 @@ public class AcademicTermsController(IAcademicTermService academicTermService) :
     }
 
     [HttpPost]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Create([FromBody] CreateAcademicTermRequest request, CancellationToken ct = default)
     {
         var createdTerm = await academicTermService.CreateAcademicTermAsync(request, ct);
@@ -43,6 +44,7 @@ public class AcademicTermsController(IAcademicTermService academicTermService) :
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateAcademicTermRequest request, CancellationToken ct = default)
     {
         var updatedTerm = await academicTermService.UpdateAcademicTermAsync(id, request, ct);
@@ -60,6 +62,7 @@ public class AcademicTermsController(IAcademicTermService academicTermService) :
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken ct = default)
     {
         var success = await academicTermService.DeleteAcademicTermAsync(id, ct);
