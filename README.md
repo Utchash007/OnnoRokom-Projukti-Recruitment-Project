@@ -171,8 +171,6 @@ graph TD
 │   ├── package.json
 │   └── next.config.ts            # Proxy rewrites to backend API
 │
-├── Assistant_Software_Engineer_Recruitment_Project.md
-├── PLAN.md                       # Architectural Plan & Database ERD
 └── README.md
 ```
 
