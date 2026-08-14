@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: onnorokom-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onnorokom_asm}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password must be set in .env}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-onnorokom_asm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onnorokom-net
+
+  # ----------------------------------------------------
+  # 2. ASP.NET Core Backend Web API
+  # ----------------------------------------------------
+  backend:
+    build:
+      context: ./Backend/OnnorokomBackend
+      dockerfile: Dockerfile
+    container_name: onnorokom-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_CONN: ${DB_CONN:?DB_CONN connection string must be provided in .env}
+      Jwt__Issuer: ${JWT_ISSUER:-OnnoRokomBackend}
+      Jwt__Audience: ${JWT_AUDIENCE:-OnnoRokomFrontend}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be provided in .env}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:${BACKEND_PORT:-5000}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    networks:
+      - onnorokom-net
+
+  # ----------------------------------------------------
+  # 3. Next.js 15 Frontend Web App
+  # ----------------------------------------------------
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: onnorokom-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      INTERNAL_BACKEND_URL: ${INTERNAL_BACKEND_URL:-http://backend:5000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${FRONTEND_PORT:-3000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - onnorokom-net
+
+networks:
+  onnorokom-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
