@@ -17,6 +17,7 @@ using OnnoRokomBackend.Services.Auth;
 using OnnoRokomBackend.Services.Batches;
 using OnnoRokomBackend.Services.CourseEnrollments;
 using OnnoRokomBackend.Services.Courses;
+using OnnoRokomBackend.Services.Submissions;
 using OnnoRokomBackend.Services.TeacherCourseAllocations;
 using OnnoRokomBackend.Services.Users;
 using OnnoRokomBackend.UnitOfWork;
@@ -51,6 +52,7 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ICourseEnrollmentService, CourseEnrollmentService>();
 builder.Services.AddScoped<ITeacherCourseAllocationService, TeacherCourseAllocationService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
