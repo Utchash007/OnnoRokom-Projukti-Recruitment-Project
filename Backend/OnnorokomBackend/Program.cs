@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using OnnoRokomBackend.Configuration;
 using OnnoRokomBackend.DbContext;
@@ -146,17 +147,24 @@ builder.Services.AddSwaggerGen(c =>
         Description = "RESTful API backend for OnnoRokom Assignment & Submission System. Evaluators can authorize using JWT Bearer tokens to test endpoints directly."
     });
 
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    var securityScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter your JWT token in the format: Bearer <your-token>"
-    });
+        Description = "Enter your JWT token in the format: Bearer <your-token>",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = "Bearer"
+        }
+    };
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityDefinition("Bearer", securityScheme);
+
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
