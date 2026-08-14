@@ -2,10 +2,17 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    // Internal connection to backend API
+    const internalBackendUrl =
+      process.env.INTERNAL_BACKEND_URL ||
+      process.env.BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:5000";
+
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:5000/api/:path*",
+        destination: `${internalBackendUrl}/api/:path*`,
       },
     ];
   },

@@ -22,6 +22,7 @@ The **Assignment & Submission Management System** streamlines academic workflows
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Router architecture with React 19)
 - **Language**: TypeScript 5
 - **Styling & Design System**: Tailwind CSS v4 (CSS-first `@theme` design tokens with OKLCH semantic palettes, dark mode support, and micro-animations)
+- **Internal Backend Integration**: Next.js proxy rewrites (`INTERNAL_BACKEND_URL` / `NEXT_PUBLIC_API_URL`) connecting internally to the backend service.
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **Form Handling & Validation**: React Hook Form + [Zod](https://zod.dev/)
 - **Icons & Visuals**: [Lucide React](https://lucide.dev/)
@@ -31,7 +32,7 @@ The **Assignment & Submission Management System** streamlines academic workflows
 - **Framework**: [ASP.NET Core Web API](https://dotnet.microsoft.com/apps/aspnet) (C# 12 / .NET 9/10)
 - **Architecture**: Clean Service-Repository & Unit of Work pattern
 - **API Style**: RESTful API with standard HTTP response codes and ProblemDetails error handling
-- **Documentation**: Swagger / OpenAPI (`/swagger`)
+- **Public Interactive Swagger / OpenAPI**: Accessible directly at `http://localhost:5000/swagger` (or `http://localhost:5000/`) with interactive JWT Bearer authorization for evaluators/judges.
 - **Security & Hashing**: BCrypt.Net-Next
 
 ### 🗄️ Database & Storage

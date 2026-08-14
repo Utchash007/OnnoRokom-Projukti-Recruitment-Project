@@ -1,4 +1,17 @@
-const API_BASE = "";
+// Internal API Base URL
+// Browser client uses relative path "/api" (proxied internally by Next.js rewrites)
+// Server-side calls use the internal backend URL directly
+function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return "";
+  }
+  return (
+    process.env.INTERNAL_BACKEND_URL ||
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:5000"
+  );
+}
 
 export class ApiError extends Error {
   constructor(
@@ -36,7 +49,10 @@ export async function apiClient<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const baseUrl = getApiBaseUrl();
+  const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
+
+  const res = await fetch(url, {
     ...options,
     headers,
   });

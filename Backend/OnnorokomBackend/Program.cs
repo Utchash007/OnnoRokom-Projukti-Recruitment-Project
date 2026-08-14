@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using OnnoRokomBackend.Configuration;
 using OnnoRokomBackend.DbContext;
 using OnnoRokomBackend.Middleware;
@@ -116,10 +117,12 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+// Configure CORS for both internal frontend proxy and public Swagger / API testing
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy => policy
-        .WithOrigins("http://localhost:3000")
+    options.AddPolicy("PublicPolicy", policy => policy
+        .AllowAnyOrigin()
         .AllowAnyHeader()
         .AllowAnyMethod());
 });
@@ -132,17 +135,58 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-builder.Services.AddOpenApi();
+// Configure Swagger & OpenAPI with Bearer Auth definition for public evaluation
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "OnnoRokom Assignment & Submission Management API",
+        Version = "v1",
+        Description = "RESTful API backend for OnnoRokom Assignment & Submission System. Evaluators can authorize using JWT Bearer tokens to test endpoints directly."
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your JWT token in the format: Bearer <your-token>"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger UI unconditionally for public access (evaluators / judges)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.MapOpenApi();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "OnnoRokom API v1");
+    c.RoutePrefix = "swagger";
+});
+
+// Redirect root URL (/) to /swagger for instant judge access
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseHttpsRedirection();
-app.UseCors("Frontend");
+app.UseCors("PublicPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<GlobalExceptionMiddleware>();
