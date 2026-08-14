@@ -10,6 +10,8 @@ using OnnoRokomBackend.Configuration;
 using OnnoRokomBackend.DbContext;
 using OnnoRokomBackend.Middleware;
 using OnnoRokomBackend.Repository;
+using OnnoRokomBackend.Seed;
+using OnnoRokomBackend.Services.Auth;
 using OnnoRokomBackend.UnitOfWork;
 
 DotEnv.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
@@ -34,6 +36,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(EFRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -112,6 +115,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.MapControllers();
+
+await SeedData.InitializeAsync(app.Services);
 
 app.Run();
 
