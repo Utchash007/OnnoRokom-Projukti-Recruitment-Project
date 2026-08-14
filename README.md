@@ -15,6 +15,8 @@ A modern, role-based educational web application built for schools and colleges 
 Developed for the **Assistant Software Engineer Recruitment Project** — *OnnoRokom Projukti Limited*.
 
 > 🚀 **Live Production Application**: [https://onnorokom-projukti-recruitment-project.onrender.com](https://onnorokom-projukti-recruitment-project.onrender.com)
+> 
+> ⏳ **Note on Initial Loading (Cold Start)**: This project is hosted on **Render Free Tier**. If the instance has been inactive, Render automatically spins down the container to conserve resources. Opening the link after a period of inactivity may take **~30–50 seconds** for the initial cold start while the container spins up. Once awake, all page navigations and API operations perform at full speed.
 
 ---
 
