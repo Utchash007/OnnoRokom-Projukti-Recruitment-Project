@@ -17,6 +17,7 @@ using OnnoRokomBackend.Services.Auth;
 using OnnoRokomBackend.Services.Batches;
 using OnnoRokomBackend.Services.CourseEnrollments;
 using OnnoRokomBackend.Services.Courses;
+using OnnoRokomBackend.Services.SubmissionAttachments;
 using OnnoRokomBackend.Services.Submissions;
 using OnnoRokomBackend.Services.TeacherCourseAllocations;
 using OnnoRokomBackend.Services.Users;
@@ -41,6 +42,7 @@ if (string.IsNullOrWhiteSpace(jwtOptions.Issuer)
 }
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection(FileUploadOptions.SectionName));
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(EFRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -53,6 +55,7 @@ builder.Services.AddScoped<ICourseEnrollmentService, CourseEnrollmentService>();
 builder.Services.AddScoped<ITeacherCourseAllocationService, TeacherCourseAllocationService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<ISubmissionAttachmentService, SubmissionAttachmentService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
