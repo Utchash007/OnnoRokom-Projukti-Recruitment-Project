@@ -29,10 +29,10 @@ The **Assignment & Submission Management System** streamlines academic workflows
 - **Notifications**: React Hot Toast
 
 ### ⚙️ Backend & API
-- **Framework**: [ASP.NET Core Web API](https://dotnet.microsoft.com/apps/aspnet) (C# 12 / .NET 9/10)
+- **Framework**: [ASP.NET Core Web API](https://dotnet.microsoft.com/apps/aspnet) (C# 12 / .NET 10)
 - **Architecture**: Clean Service-Repository & Unit of Work pattern
 - **API Style**: RESTful API with standard HTTP response codes and ProblemDetails error handling
-- **Public Interactive Swagger / OpenAPI**: Accessible directly at `http://localhost:5000/swagger` (or `http://localhost:5000/`) with interactive JWT Bearer authorization for evaluators/judges.
+- **Interactive OpenAPI Documentation**: Built-in OpenAPI with interactive API Reference portal accessible at `http://localhost:5000/scalar/v1`, `http://localhost:5000/swagger`, or `http://localhost:5000/` with interactive JWT Bearer authorization and multi-language client testing.
 - **Security & Hashing**: BCrypt.Net-Next
 
 ### 🗄️ Database & Storage

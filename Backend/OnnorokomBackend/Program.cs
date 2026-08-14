@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Models;
 using OnnoRokomBackend.Configuration;
 using OnnoRokomBackend.DbContext;
 using OnnoRokomBackend.Middleware;
@@ -24,6 +23,7 @@ using OnnoRokomBackend.Services.Submissions;
 using OnnoRokomBackend.Services.TeacherCourseAllocations;
 using OnnoRokomBackend.Services.Users;
 using OnnoRokomBackend.UnitOfWork;
+using Scalar.AspNetCore;
 
 DotEnv.AutoLoad();
 
@@ -136,62 +136,37 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// Configure Swagger & OpenAPI with Bearer Auth definition for public evaluation
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+// Configure OpenAPI (.NET 10 native with JWT Bearer security for public evaluation)
+builder.Services.AddOpenApi(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
-        Title = "OnnoRokom Assignment & Submission Management API",
-        Version = "v1",
-        Description = "RESTful API backend for OnnoRokom Assignment & Submission System. Evaluators can authorize using JWT Bearer tokens to test endpoints directly."
-    });
-
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter your JWT token in the format: Bearer <your-token>",
-        Reference = new OpenApiReference
+        document.Info = new()
         {
-            Type = ReferenceType.SecurityScheme,
-            Id = "Bearer"
-        }
-    };
+            Title = "OnnoRokom Assignment & Submission Management API",
+            Version = "v1",
+            Description = "RESTful API backend for OnnoRokom Assignment & Submission System. Evaluators can authorize using JWT Bearer tokens to test endpoints directly."
+        };
 
-    c.AddSecurityDefinition("Bearer", securityScheme);
-
-    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+        return Task.CompletedTask;
     });
 });
 
 var app = builder.Build();
 
-// Enable Swagger UI unconditionally for public access (evaluators / judges)
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// Enable OpenAPI endpoint unconditionally
+app.MapOpenApi();
+
+// Enable Interactive API Documentation UI (Scalar API Reference)
+app.MapScalarApiReference(options =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "OnnoRokom API v1");
-    c.RoutePrefix = "swagger";
+    options.WithTitle("OnnoRokom API Reference & Interactive Testing");
+    options.WithTheme(ScalarTheme.Moon);
 });
 
-// Redirect root URL (/) to /swagger for instant judge access
-app.MapGet("/", () => Results.Redirect("/swagger"));
+// Redirect root (/) and /swagger to /scalar/v1 for instant judge access
+app.MapGet("/", () => Results.Redirect("/scalar/v1"));
+app.MapGet("/swagger", () => Results.Redirect("/scalar/v1"));
 
 app.UseHttpsRedirection();
 app.UseCors("PublicPolicy");
