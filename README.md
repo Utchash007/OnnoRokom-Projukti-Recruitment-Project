@@ -44,7 +44,7 @@ The **Assignment & Submission Management System** streamlines academic workflows
 - **Framework**: [ASP.NET Core Web API](https://dotnet.microsoft.com/apps/aspnet) (C# 12 / .NET 10)
 - **Architecture**: Clean Service-Repository & Unit of Work pattern
 - **API Style**: RESTful API with standard HTTP response codes and ProblemDetails error handling
-- **Interactive OpenAPI Documentation**: Built-in OpenAPI with interactive API Reference portal accessible at `/scalar/v1`, `/swagger`, or root `/` with interactive JWT Bearer authorization and multi-language client testing.
+- **Interactive OpenAPI Documentation**: Built-in OpenAPI with interactive API Reference portal accessible at `/scalar/v1`, `/swagger`, or root `/`
 - **Security & Hashing**: BCrypt.Net-Next
 
 ### 🗄️ Database & Storage
@@ -54,6 +54,66 @@ The **Assignment & Submission Management System** streamlines academic workflows
 - **File Storage**: Relational binary file data (`bytea`) with MIME validation and 10MB upload limits
 
 ---
+
+## 🏛️ Architectural Patterns & Design Principles
+
+```mermaid
+graph LR
+    subgraph Frontend["Frontend Architecture (Next.js 15 / React 19)"]
+        UI["UI Components & Pages (App Router)"] --> Forms["React Hook Form + Zod"]
+        Forms --> Stores["Zustand State Stores"]
+        Stores --> APIClient["Typed API Client Layer"]
+    end
+
+    subgraph Backend["Backend Architecture (ASP.NET Core Web API)"]
+        Controllers["API Controllers (HTTP / Routing / RBAC)"] --> Services["Domain Business Services"]
+        Services --> UoW["Unit of Work (IUnitOfWork)"]
+        UoW --> Repos["Generic & Specific Repositories"]
+        Repos --> EFCore["Entity Framework Core"]
+        EFCore --> Postgres[("PostgreSQL Database")]
+    end
+
+    APIClient -->|JSON over HTTP / JWT Bearer| Controllers
+```
+
+### ⚙️ Backend Architectural Patterns
+
+1. **Generic Repository Pattern (`IRepository<TEntity, in TKey>`)**:
+   - **Purpose**: Provides a standardized, reusable contract for common data access operations (`GetByIdAsync`, `GetAllAsync`, `AddAsync`, `Update`, `Delete`, `ExistsAsync`) across all database entities.
+   - **Benefit**: Eliminates boilerplate query logic, decouples entity mapping from the database provider, and ensures consistent querying patterns across all domain models.
+
+2. **Repository Abstraction (`EFRepository<TEntity, TKey>`)**:
+   - **Purpose**: Encapsulates Entity Framework Core queries and entity tracking.
+   - **Benefit**: Prevents raw database access logic from leaking into business services, enabling clean unit testing, mocking, and maintainability.
+
+3. **Unit of Work Pattern (`IUnitOfWork` / `UnitOfWork`)**:
+   - **Purpose**: Manages database transactions and coordinates work across multiple repositories sharing a single `AppDbContext` instance.
+   - **Benefit**: Guarantees **ACID transaction atomicity**. Complex operations (such as enrolling an entire student batch cohort, creating assignments with attachments, or cascading status changes) either succeed completely with a single `SaveChangesAsync()` call or rollback cleanly on any failure without leaving orphan records.
+
+4. **Layered Service-Oriented Architecture**:
+   - **Controllers**: Handle HTTP verbs, route bindings, model validation, and map results to standard HTTP status codes (`200 OK`, `201 Created`, `204 NoContent`, `400 BadRequest`, `401 Unauthorized`, `403 Forbidden`, `404 NotFound`).
+   - **Business Services**: Enforce institutional rules, deadline checks, role constraints, and qualitative feedback validations.
+   - **Global Exception Middleware**: Intercepts unhandled exceptions and formats uniform RFC 7807 `ProblemDetails` error payloads.
+
+---
+
+### 🖥️ Frontend Architectural Patterns
+
+1. **App Router & Modular Route Architecture**:
+   - Organized using Next.js 15 route groups: `(auth)` for authentication flows and `(dashboard)` for role-aware application workspaces.
+   - Leverages React 19 Server Components for layout structure combined with interactive Client Components for dynamic student/teacher operations.
+
+2. **Domain-Driven Component Architecture**:
+   - **`components/ui/`**: Reusable primitive design system components (Button, Modal, Card, Table, Select, Input, DatePicker, Skeleton, Badge).
+   - **`components/[domain]/`**: Domain-specific feature components (e.g. `academic-terms/`, `batches/`, `courses/`, `assignments/`, `submissions/`, `users/`) adhering to single-responsibility and reusability principles.
+
+3. **Reactive State Management (Zustand Stores)**:
+   - **Purpose**: Segmented global state stores (`authStore`, `assignmentStore`, `courseStore`, `submissionStore`, `batchStore`, `termStore`, `userStore`).
+   - **Benefit**: Provides predictable state mutations, optimistic UI updates, cache invalidation on mutations, and seamless loading/error handling without prop-drilling.
+
+4. **Type-Safe Validation & Client Layer**:
+   - **Zod Schemas + React Hook Form**: Type-safe client-side validation providing instantaneous error feedback prior to network dispatch.
+   - **Centralized API Client**: Unified HTTP request abstraction handling JWT Bearer authorization headers, response parsing, and standard error handling.
 
 ## 🔐 Authentication & Authorization
 
