@@ -1,0 +1,8 @@
+# Agent-specific local state in Backend and Frontend
+.agents/
+skills-lock.json
+
+# Local environment configuration; example templates remain trackable
+.env
+.env.*
+!.env.example
