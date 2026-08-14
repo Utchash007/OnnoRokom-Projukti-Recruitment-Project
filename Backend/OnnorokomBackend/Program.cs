@@ -23,22 +23,35 @@ using OnnoRokomBackend.Services.TeacherCourseAllocations;
 using OnnoRokomBackend.Services.Users;
 using OnnoRokomBackend.UnitOfWork;
 
-DotEnv.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+DotEnv.AutoLoad();
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("DB_CONN")
-    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured.");
-
-var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-    ?? throw new InvalidOperationException("Jwt configuration must be configured.");
-
-if (string.IsNullOrWhiteSpace(jwtOptions.Issuer)
-    || string.IsNullOrWhiteSpace(jwtOptions.Audience)
-    || string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new InvalidOperationException("Jwt:Issuer, Jwt:Audience, and Jwt:SigningKey must be configured.");
+    connectionString = Environment.GetEnvironmentVariable("DB_CONN");
+}
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Database connection string must be configured in appsettings (ConnectionStrings:DefaultConnection) or .env (DB_CONN).");
+}
+
+var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Issuer))
+{
+    jwtOptions.Issuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? "OnnoRokomBackend";
+}
+if (string.IsNullOrWhiteSpace(jwtOptions.Audience))
+{
+    jwtOptions.Audience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? "OnnoRokomFrontend";
+}
+if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
+{
+    jwtOptions.SigningKey = Environment.GetEnvironmentVariable("Jwt__SigningKey")
+        ?? throw new InvalidOperationException("Jwt:SigningKey must be configured in appsettings or .env.");
 }
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));

@@ -13,6 +13,7 @@ public class SubmissionAttachmentConfiguration : IEntityTypeConfiguration<Submis
         builder.Property(attachment => attachment.OriginalFileName).HasMaxLength(255).IsRequired();
         builder.Property(attachment => attachment.ContentType).HasMaxLength(150).IsRequired();
         builder.Property(attachment => attachment.FileData).HasColumnType("bytea").IsRequired();
+        builder.HasQueryFilter(attachment => attachment.Submission.Assignment.DeletedAt == null);
 
         builder.HasOne(attachment => attachment.Submission)
             .WithMany(submission => submission.Attachments)

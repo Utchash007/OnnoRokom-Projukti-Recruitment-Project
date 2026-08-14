@@ -16,6 +16,7 @@ public class SubmissionConfiguration : IEntityTypeConfiguration<Submission>
         builder.Property(submission => submission.Marks).HasPrecision(8, 2);
         builder.Property(submission => submission.Feedback).HasColumnType("text");
         builder.HasIndex(submission => new { submission.AssignmentId, submission.StudentId }).IsUnique();
+        builder.HasQueryFilter(submission => submission.Assignment.DeletedAt == null);
 
         builder.HasOne(submission => submission.Assignment)
             .WithMany(assignment => assignment.Submissions)
