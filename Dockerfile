@@ -52,15 +52,15 @@ COPY --from=frontend-builder /app/public /app/frontend/public
 COPY --from=frontend-builder /app/.next/standalone /app/frontend/
 COPY --from=frontend-builder /app/.next/static /app/frontend/.next/static
 
-# Environment settings
-ENV ASPNETCORE_URLS=http://+:5000
+# Environment settings (Strictly separate internal backend port 5000 from public frontend port)
+ENV ASPNETCORE_URLS=http://127.0.0.1:5000
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV INTERNAL_BACKEND_URL=http://localhost:5000
-ENV NEXT_PUBLIC_API_URL=http://localhost:5000
+ENV INTERNAL_BACKEND_URL=http://127.0.0.1:5000
+ENV NEXT_PUBLIC_API_URL=http://127.0.0.1:5000
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=10000
 
-EXPOSE 3000 5000
+EXPOSE 10000 3000 5000
 
-# Direct inline command: launches backend in background and frontend in foreground
-CMD ["/bin/bash", "-c", "cd /app/backend && dotnet OnnoRokomBackend.dll & cd /app/frontend && PORT=${PORT:-3000} node server.js"]
+# Direct inline command: runs backend on internal port 5000 and Next.js frontend on public PORT (10000)
+CMD ["/bin/bash", "-c", "cd /app/backend && ASPNETCORE_URLS=http://127.0.0.1:5000 dotnet OnnoRokomBackend.dll & cd /app/frontend && PORT=${PORT:-10000} node server.js"]
