@@ -165,11 +165,8 @@ app.MapScalarApiReference(options =>
 });
 
 // Redirect root (/) and /swagger to /scalar/v1 for instant judge access
-// Only enforce HTTPS redirection in Production to allow dev HTTP proxying
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+app.MapGet("/", () => Results.Redirect("/scalar/v1"));
+app.MapGet("/swagger", () => Results.Redirect("/scalar/v1"));
 
 app.UseCors("PublicPolicy");
 app.UseAuthentication();
