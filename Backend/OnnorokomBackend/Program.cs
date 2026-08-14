@@ -11,7 +11,11 @@ using OnnoRokomBackend.DbContext;
 using OnnoRokomBackend.Middleware;
 using OnnoRokomBackend.Repository;
 using OnnoRokomBackend.Seed;
+using OnnoRokomBackend.Services.AcademicTerms;
 using OnnoRokomBackend.Services.Auth;
+using OnnoRokomBackend.Services.Batches;
+using OnnoRokomBackend.Services.Courses;
+using OnnoRokomBackend.Services.Users;
 using OnnoRokomBackend.UnitOfWork;
 
 DotEnv.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
@@ -37,6 +41,10 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connect
 builder.Services.AddScoped(typeof(IRepository<>), typeof(EFRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAcademicTermService, AcademicTermService>();
+builder.Services.AddScoped<IBatchService, BatchService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
