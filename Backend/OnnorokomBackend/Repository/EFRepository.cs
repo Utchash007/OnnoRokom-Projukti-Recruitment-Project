@@ -12,7 +12,7 @@ public class EFRepository<TEntity> : IRepository<TEntity> where TEntity : class
         _context = context;
     }
 
-    public async Task<TEntity> Get(string id)
+    public async Task<TEntity?> Get(string id)
     {
         return await _context.Set<TEntity>().FindAsync(id);
     }
