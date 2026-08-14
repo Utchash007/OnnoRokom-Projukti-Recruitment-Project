@@ -1,8 +1,20 @@
 # Assignment & Submission Management System
 
+[![Live Status](https://img.shields.io/badge/Status-Live%20%26%20Operational-2ea44f?style=for-the-badge&logo=render&logoColor=white)](https://onnorokom-projukti-recruitment-project.onrender.com)
+[![Next.js](https://img.shields.io/badge/Next.js%2015-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React%2019-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript%205-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS%20v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![.NET](https://img.shields.io/badge/.NET%2010-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![C#](https://img.shields.io/badge/C%23%2012-239120?style=for-the-badge&logo=csharp&logoColor=white)](https://docs.microsoft.com/en-us/dotnet/csharp/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL%2016-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
 A modern, role-based educational web application built for schools and colleges to manage curriculum courses, student cohorts, course assignments, submissions, evaluations, and grading workflows.
 
 Developed for the **Assistant Software Engineer Recruitment Project** — *OnnoRokom Projukti Limited*.
+
+> 🚀 **Live Production Application**: [https://onnorokom-projukti-recruitment-project.onrender.com](https://onnorokom-projukti-recruitment-project.onrender.com)
 
 ---
 
@@ -32,7 +44,7 @@ The **Assignment & Submission Management System** streamlines academic workflows
 - **Framework**: [ASP.NET Core Web API](https://dotnet.microsoft.com/apps/aspnet) (C# 12 / .NET 10)
 - **Architecture**: Clean Service-Repository & Unit of Work pattern
 - **API Style**: RESTful API with standard HTTP response codes and ProblemDetails error handling
-- **Interactive OpenAPI Documentation**: Built-in OpenAPI with interactive API Reference portal accessible at `http://localhost:5000/scalar/v1`, `http://localhost:5000/swagger`, or `http://localhost:5000/` with interactive JWT Bearer authorization and multi-language client testing.
+- **Interactive OpenAPI Documentation**: Built-in OpenAPI with interactive API Reference portal accessible at `/scalar/v1`, `/swagger`, or root `/` with interactive JWT Bearer authorization and multi-language client testing.
 - **Security & Hashing**: BCrypt.Net-Next
 
 ### 🗄️ Database & Storage
