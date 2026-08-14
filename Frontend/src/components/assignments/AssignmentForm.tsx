@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import {
@@ -73,6 +73,7 @@ export const AssignmentForm: React.FC<AssignmentFormProps> = ({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentSchema),
@@ -173,12 +174,19 @@ export const AssignmentForm: React.FC<AssignmentFormProps> = ({
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <DatePicker
-              id="deadlineAt"
-              label="Submission Deadline"
-              showTime
-              error={errors.deadlineAt?.message}
-              {...register("deadlineAt")}
+            <Controller
+              name="deadlineAt"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  id="deadlineAt"
+                  label="Submission Deadline"
+                  showTime
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  error={errors.deadlineAt?.message}
+                />
+              )}
             />
 
             <Input
