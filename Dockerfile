@@ -20,8 +20,8 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 # Copy package dependencies and install
-COPY Frontend/package.json Frontend/package-lock.json ./
-RUN npm ci
+COPY Frontend/package.json Frontend/package-lock.json* ./
+RUN npm install
 
 # Copy frontend source and build standalone bundle
 COPY Frontend/ .
