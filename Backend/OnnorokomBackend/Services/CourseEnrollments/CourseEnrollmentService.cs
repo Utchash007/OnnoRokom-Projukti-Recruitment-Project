@@ -10,7 +10,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
 {
     public async Task<List<CourseStudentResponse>> GetCourseStudentsAsync(Guid courseId, CancellationToken ct = default)
     {
-        return await unitOfWork.Context.CourseEnrollments
+        return await unitOfWork.CourseEnrollmentRepo.GetAll()
             .AsNoTracking()
             .Where(ce => ce.CourseId == courseId)
             .Include(ce => ce.BatchEnrollment)
@@ -33,7 +33,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
 
     public async Task<List<StudentCourseResponse>> GetStudentCoursesAsync(Guid studentId, CancellationToken ct = default)
     {
-        return await unitOfWork.Context.CourseEnrollments
+        return await unitOfWork.CourseEnrollmentRepo.GetAll()
             .AsNoTracking()
             .Where(ce => ce.BatchEnrollment.StudentId == studentId)
             .Include(ce => ce.Course)
@@ -51,7 +51,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
 
     public async Task<List<CourseStudentResponse>> EnrollStudentsAsync(EnrollStudentsRequest request, CancellationToken ct = default)
     {
-        var course = await unitOfWork.Context.Courses
+        var course = await unitOfWork.CourseRepo.GetAll()
             .SingleOrDefaultAsync(c => c.Id == request.CourseId, ct);
 
         if (course is null)
@@ -61,7 +61,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
 
         var distinctBatchEnrollmentIds = request.BatchEnrollmentIds.Distinct().ToList();
 
-        var batchEnrollments = await unitOfWork.Context.BatchEnrollments
+        var batchEnrollments = await unitOfWork.BatchEnrollmentRepo.GetAll()
             .Include(be => be.Student)
             .Include(be => be.Batch)
             .Where(be => distinctBatchEnrollmentIds.Contains(be.Id))
@@ -78,7 +78,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
             throw new InvalidOperationException($"Student '{inactiveBatchEnrollment.Student.FullName}' does not have an active batch enrollment.");
         }
 
-        var existingEnrollments = await unitOfWork.Context.CourseEnrollments
+        var existingEnrollments = await unitOfWork.CourseEnrollmentRepo.GetAll()
             .Where(ce => ce.CourseId == request.CourseId && distinctBatchEnrollmentIds.Contains(ce.BatchEnrollmentId))
             .ToListAsync(ct);
 
@@ -97,7 +97,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
                     Status = EnrollmentStatus.Active
                 };
                 newEnrollments.Add(enrollment);
-                unitOfWork.Context.CourseEnrollments.Add(enrollment);
+                await unitOfWork.CourseEnrollmentRepo.Add(enrollment);
             }
         }
 
@@ -111,7 +111,7 @@ public class CourseEnrollmentService(IUnitOfWork unitOfWork) : ICourseEnrollment
 
     public async Task<bool> SetCourseEnrollmentStatusAsync(Guid enrollmentId, SetCourseEnrollmentStatusRequest request, CancellationToken ct = default)
     {
-        var enrollment = await unitOfWork.Context.CourseEnrollments
+        var enrollment = await unitOfWork.CourseEnrollmentRepo.GetAll()
             .SingleOrDefaultAsync(ce => ce.Id == enrollmentId, ct);
 
         if (enrollment is null)

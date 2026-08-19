@@ -10,7 +10,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 {
     public async Task<List<BatchResponse>> GetBatchesAsync(CancellationToken ct = default)
     {
-        return await unitOfWork.Context.AcademicBatches
+        return await unitOfWork.AcademicBatchRepo.GetAll()
             .AsNoTracking()
             .Include(b => b.Term)
             .OrderBy(b => b.Code)
@@ -27,7 +27,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
     public async Task<BatchResponse?> GetBatchByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var batch = await unitOfWork.Context.AcademicBatches
+        var batch = await unitOfWork.AcademicBatchRepo.GetAll()
             .AsNoTracking()
             .Include(b => b.Term)
             .SingleOrDefaultAsync(b => b.Id == id, ct);
@@ -49,7 +49,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
     public async Task<BatchResponse> CreateBatchAsync(CreateBatchRequest request, CancellationToken ct = default)
     {
-        var term = await unitOfWork.Context.AcademicTerms
+        var term = await unitOfWork.AcademicTermRepo.GetAll()
             .SingleOrDefaultAsync(t => t.Id == request.TermId, ct);
 
         if (term is null)
@@ -65,7 +65,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
             Name = request.Name.Trim()
         };
 
-        unitOfWork.Context.AcademicBatches.Add(batch);
+        await unitOfWork.AcademicBatchRepo.Add(batch);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new BatchResponse
@@ -80,7 +80,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
     public async Task<BatchResponse?> UpdateBatchAsync(Guid id, UpdateBatchRequest request, CancellationToken ct = default)
     {
-        var batch = await unitOfWork.Context.AcademicBatches
+        var batch = await unitOfWork.AcademicBatchRepo.GetAll()
             .Include(b => b.Term)
             .SingleOrDefaultAsync(b => b.Id == id, ct);
 
@@ -106,7 +106,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
     public async Task<bool> DeleteBatchAsync(Guid id, CancellationToken ct = default)
     {
-        var batch = await unitOfWork.Context.AcademicBatches
+        var batch = await unitOfWork.AcademicBatchRepo.GetAll()
             .SingleOrDefaultAsync(b => b.Id == id, ct);
 
         if (batch is null)
@@ -114,7 +114,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
             return false;
         }
 
-        var hasEnrollments = await unitOfWork.Context.BatchEnrollments
+        var hasEnrollments = await unitOfWork.BatchEnrollmentRepo.GetAll()
             .AnyAsync(e => e.BatchId == id, ct);
 
         if (hasEnrollments)
@@ -122,14 +122,14 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
             throw new InvalidOperationException("Cannot delete batch because student enrollments exist.");
         }
 
-        unitOfWork.Context.AcademicBatches.Remove(batch);
+        unitOfWork.AcademicBatchRepo.Delete(batch);
         await unitOfWork.SaveChangesAsync(ct);
         return true;
     }
 
     public async Task<List<BatchStudentResponse>> GetBatchStudentsAsync(Guid batchId, CancellationToken ct = default)
     {
-        return await unitOfWork.Context.BatchEnrollments
+        return await unitOfWork.BatchEnrollmentRepo.GetAll()
             .AsNoTracking()
             .Where(e => e.BatchId == batchId)
             .Include(e => e.Student)
@@ -148,7 +148,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
     public async Task<BatchStudentResponse> AssignStudentAsync(Guid batchId, AssignStudentRequest request, CancellationToken ct = default)
     {
-        var batch = await unitOfWork.Context.AcademicBatches
+        var batch = await unitOfWork.AcademicBatchRepo.GetAll()
             .SingleOrDefaultAsync(b => b.Id == batchId, ct);
 
         if (batch is null)
@@ -156,7 +156,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
             throw new InvalidOperationException($"Batch with ID '{batchId}' was not found.");
         }
 
-        var student = await unitOfWork.Context.Users
+        var student = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Id == request.StudentId, ct);
 
         if (student is null || student.Role != UserRole.Student)
@@ -165,7 +165,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
         }
 
         // Check if student already enrolled in this exact batch
-        var alreadyInBatch = await unitOfWork.Context.BatchEnrollments
+        var alreadyInBatch = await unitOfWork.BatchEnrollmentRepo.GetAll()
             .AnyAsync(e => e.BatchId == batchId && e.StudentId == request.StudentId, ct);
 
         if (alreadyInBatch)
@@ -174,7 +174,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
         }
 
         // Check if student already has an active enrollment in this term
-        var hasActiveInTerm = await unitOfWork.Context.BatchEnrollments
+        var hasActiveInTerm = await unitOfWork.BatchEnrollmentRepo.GetAll()
             .AnyAsync(e => e.StudentId == request.StudentId
                            && e.Batch.TermId == batch.TermId
                            && e.Status == EnrollmentStatus.Active, ct);
@@ -192,7 +192,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
             Status = EnrollmentStatus.Active
         };
 
-        unitOfWork.Context.BatchEnrollments.Add(enrollment);
+        await unitOfWork.BatchEnrollmentRepo.Add(enrollment);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new BatchStudentResponse
@@ -208,7 +208,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
     public async Task<bool> SetBatchEnrollmentStatusAsync(Guid enrollmentId, SetBatchEnrollmentStatusRequest request, CancellationToken ct = default)
     {
-        var enrollment = await unitOfWork.Context.BatchEnrollments
+        var enrollment = await unitOfWork.BatchEnrollmentRepo.GetAll()
             .Include(e => e.Batch)
             .SingleOrDefaultAsync(e => e.Id == enrollmentId, ct);
 
@@ -219,7 +219,7 @@ public class BatchService(IUnitOfWork unitOfWork) : IBatchService
 
         if (request.Status == EnrollmentStatus.Active && enrollment.Status != EnrollmentStatus.Active)
         {
-            var hasActiveInTerm = await unitOfWork.Context.BatchEnrollments
+            var hasActiveInTerm = await unitOfWork.BatchEnrollmentRepo.GetAll()
                 .AnyAsync(e => e.Id != enrollmentId
                                && e.StudentId == enrollment.StudentId
                                && e.Batch.TermId == enrollment.Batch.TermId

@@ -9,7 +9,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
 {
     public async Task<List<AcademicTermResponse>> GetAcademicTermsAsync(CancellationToken ct = default)
     {
-        return await unitOfWork.Context.AcademicTerms
+        return await unitOfWork.AcademicTermRepo.GetAll()
             .AsNoTracking()
             .OrderByDescending(t => t.StartsOn)
             .Select(t => new AcademicTermResponse
@@ -24,7 +24,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
 
     public async Task<AcademicTermResponse?> GetAcademicTermByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var term = await unitOfWork.Context.AcademicTerms
+        var term = await unitOfWork.AcademicTermRepo.GetAll()
             .AsNoTracking()
             .SingleOrDefaultAsync(t => t.Id == id, ct);
 
@@ -50,7 +50,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
         }
 
         var normalizedCode = request.Code.Trim().ToUpperInvariant();
-        var codeExists = await unitOfWork.Context.AcademicTerms
+        var codeExists = await unitOfWork.AcademicTermRepo.GetAll()
             .AnyAsync(t => t.Code.ToUpper() == normalizedCode, ct);
 
         if (codeExists)
@@ -66,7 +66,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
             EndsOn = request.EndsOn
         };
 
-        unitOfWork.Context.AcademicTerms.Add(term);
+        await unitOfWork.AcademicTermRepo.Add(term);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new AcademicTermResponse
@@ -85,7 +85,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
             throw new InvalidOperationException("Term start date cannot be after end date.");
         }
 
-        var term = await unitOfWork.Context.AcademicTerms
+        var term = await unitOfWork.AcademicTermRepo.GetAll()
             .SingleOrDefaultAsync(t => t.Id == id, ct);
 
         if (term is null)
@@ -96,7 +96,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
         var normalizedCode = request.Code.Trim().ToUpperInvariant();
         if (term.Code.ToUpper() != normalizedCode)
         {
-            var codeExists = await unitOfWork.Context.AcademicTerms
+            var codeExists = await unitOfWork.AcademicTermRepo.GetAll()
                 .AnyAsync(t => t.Id != id && t.Code.ToUpper() == normalizedCode, ct);
 
             if (codeExists)
@@ -123,7 +123,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
 
     public async Task<bool> DeleteAcademicTermAsync(Guid id, CancellationToken ct = default)
     {
-        var term = await unitOfWork.Context.AcademicTerms
+        var term = await unitOfWork.AcademicTermRepo.GetAll()
             .SingleOrDefaultAsync(t => t.Id == id, ct);
 
         if (term is null)
@@ -131,7 +131,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
             return false;
         }
 
-        var hasBatches = await unitOfWork.Context.AcademicBatches
+        var hasBatches = await unitOfWork.AcademicBatchRepo.GetAll()
             .AnyAsync(b => b.TermId == id, ct);
 
         if (hasBatches)
@@ -139,7 +139,7 @@ public class AcademicTermService(IUnitOfWork unitOfWork) : IAcademicTermService
             throw new InvalidOperationException("Cannot delete academic term because batches reference it.");
         }
 
-        unitOfWork.Context.AcademicTerms.Remove(term);
+        unitOfWork.AcademicTermRepo.Delete(term);
         await unitOfWork.SaveChangesAsync(ct);
         return true;
     }

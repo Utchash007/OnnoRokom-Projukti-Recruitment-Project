@@ -10,7 +10,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
 {
     public async Task<List<UserResponse>> GetUsersAsync(UserRole? roleFilter, CancellationToken ct = default)
     {
-        var query = unitOfWork.Context.Users.AsNoTracking().AsQueryable();
+        var query = unitOfWork.UserRepo.GetAll().AsNoTracking().AsQueryable();
 
         if (roleFilter.HasValue)
         {
@@ -33,7 +33,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
 
     public async Task<UserResponse?> GetUserByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var user = await unitOfWork.Context.Users
+        var user = await unitOfWork.UserRepo.GetAll()
             .AsNoTracking()
             .SingleOrDefaultAsync(u => u.Id == id, ct);
 
@@ -56,7 +56,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
     public async Task<UserResponse> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var emailExists = await unitOfWork.Context.Users
+        var emailExists = await unitOfWork.UserRepo.GetAll()
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
 
         if (emailExists)
@@ -76,7 +76,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
             AuthVersion = 1
         };
 
-        unitOfWork.Context.Users.Add(user);
+        await unitOfWork.UserRepo.Add(user);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new UserResponse
@@ -92,7 +92,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
 
     public async Task<UserResponse?> UpdateUserAsync(Guid id, UpdateUserRequest request, CancellationToken ct = default)
     {
-        var user = await unitOfWork.Context.Users
+        var user = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Id == id, ct);
 
         if (user is null)
@@ -103,7 +103,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         if (user.Email.ToLower() != normalizedEmail)
         {
-            var emailExists = await unitOfWork.Context.Users
+            var emailExists = await unitOfWork.UserRepo.GetAll()
                 .AnyAsync(u => u.Id != id && u.Email.ToLower() == normalizedEmail, ct);
 
             if (emailExists)
@@ -132,7 +132,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
 
     public async Task<bool> SetUserActiveStatusAsync(Guid id, SetActiveStatusRequest request, CancellationToken ct = default)
     {
-        var user = await unitOfWork.Context.Users
+        var user = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Id == id, ct);
 
         if (user is null)
@@ -149,7 +149,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
 
     public async Task<bool> ChangePasswordAsync(Guid id, ChangePasswordRequest request, CancellationToken ct = default)
     {
-        var user = await unitOfWork.Context.Users
+        var user = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Id == id, ct);
 
         if (user is null)

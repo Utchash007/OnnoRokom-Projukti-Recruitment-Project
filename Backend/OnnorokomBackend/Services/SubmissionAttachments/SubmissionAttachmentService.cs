@@ -30,7 +30,7 @@ public class SubmissionAttachmentService(IUnitOfWork unitOfWork, IOptions<FileUp
             throw new InvalidOperationException($"File type '{file.ContentType}' is not permitted.");
         }
 
-        var submission = await unitOfWork.Context.Submissions
+        var submission = await unitOfWork.SubmissionRepo.GetAll()
             .Include(s => s.Assignment)
             .SingleOrDefaultAsync(s => s.Id == submissionId, ct);
 
@@ -63,7 +63,7 @@ public class SubmissionAttachmentService(IUnitOfWork unitOfWork, IOptions<FileUp
             FileData = fileBytes
         };
 
-        unitOfWork.Context.SubmissionAttachments.Add(attachment);
+        await unitOfWork.SubmissionAttachmentRepo.Add(attachment);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new AttachmentResponse
@@ -81,7 +81,7 @@ public class SubmissionAttachmentService(IUnitOfWork unitOfWork, IOptions<FileUp
         UserRole role,
         CancellationToken ct = default)
     {
-        var attachment = await unitOfWork.Context.SubmissionAttachments
+        var attachment = await unitOfWork.SubmissionAttachmentRepo.GetAll()
             .AsNoTracking()
             .Include(a => a.Submission)
                 .ThenInclude(s => s.Assignment)
@@ -101,7 +101,7 @@ public class SubmissionAttachmentService(IUnitOfWork unitOfWork, IOptions<FileUp
         }
         else if (role == UserRole.Teacher)
         {
-            var isAllocated = await unitOfWork.Context.TeacherCourseAllocations
+            var isAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
                 .AnyAsync(tca => tca.TeacherId == userId
                                 && tca.CourseId == attachment.Submission.Assignment.CourseId
                                 && tca.Status == TeacherCourseAllocationStatus.Active, ct);
@@ -117,7 +117,7 @@ public class SubmissionAttachmentService(IUnitOfWork unitOfWork, IOptions<FileUp
 
     public async Task<bool> DeleteAttachmentAsync(Guid attachmentId, Guid studentId, CancellationToken ct = default)
     {
-        var attachment = await unitOfWork.Context.SubmissionAttachments
+        var attachment = await unitOfWork.SubmissionAttachmentRepo.GetAll()
             .Include(a => a.Submission)
                 .ThenInclude(s => s.Assignment)
             .SingleOrDefaultAsync(a => a.Id == attachmentId, ct);
@@ -137,7 +137,7 @@ public class SubmissionAttachmentService(IUnitOfWork unitOfWork, IOptions<FileUp
             throw new InvalidOperationException("Submissions for this assignment are closed.");
         }
 
-        unitOfWork.Context.SubmissionAttachments.Remove(attachment);
+        unitOfWork.SubmissionAttachmentRepo.Delete(attachment);
         await unitOfWork.SaveChangesAsync(ct);
         return true;
     }

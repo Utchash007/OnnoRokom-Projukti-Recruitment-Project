@@ -2,9 +2,9 @@ namespace OnnoRokomBackend.Repository;
 
 public interface IRepository<TEntity> where TEntity : class
 {
-    Task<TEntity?> Get(string id);
+    Task<TEntity?> Get(Guid id);
     IQueryable<TEntity> GetAll();
-    Task Update(TEntity entity);
-    Task Delete(string id);
+    void Update(TEntity entity);
+    void Delete(TEntity entity);
     Task Add(TEntity entity);
 }

@@ -10,7 +10,7 @@ public class AuthService(IUnitOfWork unitOfWork) : IAuthService
     public async Task<User?> AuthenticateAsync(LoginRequest request, CancellationToken ct = default)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var user = await unitOfWork.Context.Users
+        var user = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail, ct);
 
         if (user is null || !user.IsActive)
@@ -29,7 +29,7 @@ public class AuthService(IUnitOfWork unitOfWork) : IAuthService
 
     public async Task<CurrentUserResponse?> GetCurrentUserAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await unitOfWork.Context.Users
+        var user = await unitOfWork.UserRepo.GetAll()
             .AsNoTracking()
             .SingleOrDefaultAsync(u => u.Id == userId, ct);
 

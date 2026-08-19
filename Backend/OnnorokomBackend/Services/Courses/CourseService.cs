@@ -9,7 +9,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
 {
     public async Task<List<CourseResponse>> GetCoursesAsync(CancellationToken ct = default)
     {
-        return await unitOfWork.Context.Courses
+        return await unitOfWork.CourseRepo.GetAll()
             .AsNoTracking()
             .OrderBy(c => c.Code)
             .Select(c => new CourseResponse
@@ -24,7 +24,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
 
     public async Task<CourseResponse?> GetCourseByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var course = await unitOfWork.Context.Courses
+        var course = await unitOfWork.CourseRepo.GetAll()
             .AsNoTracking()
             .SingleOrDefaultAsync(c => c.Id == id, ct);
 
@@ -45,7 +45,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
     public async Task<CourseResponse> CreateCourseAsync(CreateCourseRequest request, CancellationToken ct = default)
     {
         var normalizedCode = request.Code.Trim().ToUpperInvariant();
-        var codeExists = await unitOfWork.Context.Courses
+        var codeExists = await unitOfWork.CourseRepo.GetAll()
             .AnyAsync(c => c.Code.ToUpper() == normalizedCode, ct);
 
         if (codeExists)
@@ -61,7 +61,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
             Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim()
         };
 
-        unitOfWork.Context.Courses.Add(course);
+        await unitOfWork.CourseRepo.Add(course);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new CourseResponse
@@ -75,7 +75,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
 
     public async Task<CourseResponse?> UpdateCourseAsync(Guid id, UpdateCourseRequest request, CancellationToken ct = default)
     {
-        var course = await unitOfWork.Context.Courses
+        var course = await unitOfWork.CourseRepo.GetAll()
             .SingleOrDefaultAsync(c => c.Id == id, ct);
 
         if (course is null)
@@ -86,7 +86,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
         var normalizedCode = request.Code.Trim().ToUpperInvariant();
         if (course.Code.ToUpper() != normalizedCode)
         {
-            var codeExists = await unitOfWork.Context.Courses
+            var codeExists = await unitOfWork.CourseRepo.GetAll()
                 .AnyAsync(c => c.Id != id && c.Code.ToUpper() == normalizedCode, ct);
 
             if (codeExists)
@@ -113,7 +113,7 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
 
     public async Task<bool> DeleteCourseAsync(Guid id, CancellationToken ct = default)
     {
-        var course = await unitOfWork.Context.Courses
+        var course = await unitOfWork.CourseRepo.GetAll()
             .SingleOrDefaultAsync(c => c.Id == id, ct);
 
         if (course is null)
@@ -121,16 +121,16 @@ public class CourseService(IUnitOfWork unitOfWork) : ICourseService
             return false;
         }
 
-        var hasAllocations = await unitOfWork.Context.TeacherCourseAllocations.AnyAsync(a => a.CourseId == id, ct);
-        var hasEnrollments = await unitOfWork.Context.CourseEnrollments.AnyAsync(e => e.CourseId == id, ct);
-        var hasAssignments = await unitOfWork.Context.Assignments.IgnoreQueryFilters().AnyAsync(a => a.CourseId == id, ct);
+        var hasAllocations = await unitOfWork.TeacherCourseAllocationRepo.GetAll().AnyAsync(a => a.CourseId == id, ct);
+        var hasEnrollments = await unitOfWork.CourseEnrollmentRepo.GetAll().AnyAsync(e => e.CourseId == id, ct);
+        var hasAssignments = await unitOfWork.AssignmentRepo.GetAll().IgnoreQueryFilters().AnyAsync(a => a.CourseId == id, ct);
 
         if (hasAllocations || hasEnrollments || hasAssignments)
         {
             throw new InvalidOperationException("Cannot delete course because teacher allocations, student enrollments, or assignments exist.");
         }
 
-        unitOfWork.Context.Courses.Remove(course);
+        unitOfWork.CourseRepo.Delete(course);
         await unitOfWork.SaveChangesAsync(ct);
         return true;
     }

@@ -11,7 +11,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 {
     public async Task<List<SubmissionResponse>> GetMySubmissionsAsync(Guid studentId, CancellationToken ct = default)
     {
-        return await unitOfWork.Context.Submissions
+        return await unitOfWork.SubmissionRepo.GetAll()
             .AsNoTracking()
             .Where(s => s.StudentId == studentId)
             .Include(s => s.Assignment)
@@ -25,7 +25,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
     public async Task<List<SubmissionResponse>> GetAssignmentSubmissionsAsync(Guid assignmentId, Guid userId, UserRole role, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .AsNoTracking()
             .SingleOrDefaultAsync(a => a.Id == assignmentId, ct);
 
@@ -36,7 +36,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
         if (role == UserRole.Teacher)
         {
-            var isAllocated = await unitOfWork.Context.TeacherCourseAllocations
+            var isAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
                 .AnyAsync(tca => tca.TeacherId == userId && tca.CourseId == assignment.CourseId && tca.Status == TeacherCourseAllocationStatus.Active, ct);
 
             if (!isAllocated)
@@ -49,7 +49,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
             throw new UnauthorizedAccessException("You are not authorized to view all submissions for this assignment.");
         }
 
-        return await unitOfWork.Context.Submissions
+        return await unitOfWork.SubmissionRepo.GetAll()
             .AsNoTracking()
             .Where(s => s.AssignmentId == assignmentId)
             .Include(s => s.Assignment)
@@ -63,7 +63,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
     public async Task<SubmissionResponse?> GetSubmissionByIdAsync(Guid id, Guid userId, UserRole role, CancellationToken ct = default)
     {
-        var submission = await unitOfWork.Context.Submissions
+        var submission = await unitOfWork.SubmissionRepo.GetAll()
             .AsNoTracking()
             .Include(s => s.Assignment)
             .Include(s => s.Student)
@@ -85,7 +85,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
         }
         else if (role == UserRole.Teacher)
         {
-            var isAllocated = await unitOfWork.Context.TeacherCourseAllocations
+            var isAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
                 .AnyAsync(tca => tca.TeacherId == userId && tca.CourseId == submission.Assignment.CourseId && tca.Status == TeacherCourseAllocationStatus.Active, ct);
 
             if (!isAllocated)
@@ -99,7 +99,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
     public async Task<SubmissionResponse> UpsertSubmissionAsync(Guid assignmentId, Guid studentId, UpsertSubmissionRequest request, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .Include(a => a.Course)
             .SingleOrDefaultAsync(a => a.Id == assignmentId, ct);
 
@@ -108,7 +108,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
             throw new InvalidOperationException("Assignment is not available for submissions.");
         }
 
-        var isEnrolled = await unitOfWork.Context.CourseEnrollments
+        var isEnrolled = await unitOfWork.CourseEnrollmentRepo.GetAll()
             .AnyAsync(ce => ce.CourseId == assignment.CourseId
                             && ce.BatchEnrollment.StudentId == studentId
                             && ce.Status == EnrollmentStatus.Active
@@ -124,7 +124,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
             throw new InvalidOperationException("Submissions for this assignment have been closed by the teacher.");
         }
 
-        var existingSubmission = await unitOfWork.Context.Submissions
+        var existingSubmission = await unitOfWork.SubmissionRepo.GetAll()
             .Include(s => s.Attachments)
             .SingleOrDefaultAsync(s => s.AssignmentId == assignmentId && s.StudentId == studentId, ct);
 
@@ -143,7 +143,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
             await unitOfWork.SaveChangesAsync(ct);
 
-            var student = await unitOfWork.Context.Users.AsNoTracking().SingleAsync(u => u.Id == studentId, ct);
+            var student = await unitOfWork.UserRepo.GetAll().AsNoTracking().SingleAsync(u => u.Id == studentId, ct);
             return new SubmissionResponse
             {
                 Id = existingSubmission.Id,
@@ -179,10 +179,10 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
             Status = isLate ? SubmissionStatus.Late : SubmissionStatus.Submitted
         };
 
-        unitOfWork.Context.Submissions.Add(newSubmission);
+        await unitOfWork.SubmissionRepo.Add(newSubmission);
         await unitOfWork.SaveChangesAsync(ct);
 
-        var studentUser = await unitOfWork.Context.Users.AsNoTracking().SingleAsync(u => u.Id == studentId, ct);
+        var studentUser = await unitOfWork.UserRepo.GetAll().AsNoTracking().SingleAsync(u => u.Id == studentId, ct);
         return new SubmissionResponse
         {
             Id = newSubmission.Id,
@@ -204,7 +204,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
     public async Task<SubmissionResponse?> ReviewSubmissionAsync(Guid id, Guid teacherId, ReviewSubmissionRequest request, CancellationToken ct = default)
     {
-        var submission = await unitOfWork.Context.Submissions
+        var submission = await unitOfWork.SubmissionRepo.GetAll()
             .Include(s => s.Assignment)
             .Include(s => s.Student)
             .Include(s => s.Attachments)
@@ -215,7 +215,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
             return null;
         }
 
-        var isAllocated = await unitOfWork.Context.TeacherCourseAllocations
+        var isAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
             .AnyAsync(tca => tca.TeacherId == teacherId && tca.CourseId == submission.Assignment.CourseId && tca.Status == TeacherCourseAllocationStatus.Active, ct);
 
         if (!isAllocated)
@@ -235,7 +235,7 @@ public class SubmissionService(IUnitOfWork unitOfWork) : ISubmissionService
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        var teacher = await unitOfWork.Context.Users.AsNoTracking().SingleAsync(u => u.Id == teacherId, ct);
+        var teacher = await unitOfWork.UserRepo.GetAll().AsNoTracking().SingleAsync(u => u.Id == teacherId, ct);
 
         return new SubmissionResponse
         {

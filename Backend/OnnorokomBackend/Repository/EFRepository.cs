@@ -12,7 +12,7 @@ public class EFRepository<TEntity> : IRepository<TEntity> where TEntity : class
         _context = context;
     }
 
-    public async Task<TEntity?> Get(string id)
+    public async Task<TEntity?> Get(Guid id)
     {
         return await _context.Set<TEntity>().FindAsync(id);
     }
@@ -22,22 +22,14 @@ public class EFRepository<TEntity> : IRepository<TEntity> where TEntity : class
         await _context.Set<TEntity>().AddAsync(entity);
     }
 
-    public async Task Delete(string id)
+    public void Delete(TEntity entity)
     {
-        var entity = await Get(id);
-        if (entity is null)
-        {
-            return;
-        }
-
         _context.Set<TEntity>().Remove(entity);
-        
     }
 
-    public async Task Update(TEntity entity)
+    public void Update(TEntity entity)
     {
         _context.Entry(entity).State = EntityState.Modified;
-        await Task.CompletedTask;
     }
 
     public IQueryable<TEntity> GetAll()

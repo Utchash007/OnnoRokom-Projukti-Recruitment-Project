@@ -10,7 +10,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
 {
     public async Task<List<CourseTeacherResponse>> GetCourseTeachersAsync(Guid courseId, CancellationToken ct = default)
     {
-        return await unitOfWork.Context.TeacherCourseAllocations
+        return await unitOfWork.TeacherCourseAllocationRepo.GetAll()
             .AsNoTracking()
             .Where(a => a.CourseId == courseId)
             .Include(a => a.Teacher)
@@ -28,7 +28,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
 
     public async Task<List<TeacherCourseResponse>> GetTeacherCoursesAsync(Guid teacherId, CancellationToken ct = default)
     {
-        return await unitOfWork.Context.TeacherCourseAllocations
+        return await unitOfWork.TeacherCourseAllocationRepo.GetAll()
             .AsNoTracking()
             .Where(a => a.TeacherId == teacherId)
             .Include(a => a.Course)
@@ -46,7 +46,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
 
     public async Task<CourseTeacherResponse> AllocateTeacherAsync(AllocateTeacherRequest request, CancellationToken ct = default)
     {
-        var teacher = await unitOfWork.Context.Users
+        var teacher = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Id == request.TeacherId, ct);
 
         if (teacher is null || teacher.Role != UserRole.Teacher)
@@ -54,7 +54,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
             throw new InvalidOperationException("Allocated user must exist and have the Teacher role.");
         }
 
-        var course = await unitOfWork.Context.Courses
+        var course = await unitOfWork.CourseRepo.GetAll()
             .SingleOrDefaultAsync(c => c.Id == request.CourseId, ct);
 
         if (course is null)
@@ -62,7 +62,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
             throw new InvalidOperationException($"Course with ID '{request.CourseId}' does not exist.");
         }
 
-        var alreadyAllocated = await unitOfWork.Context.TeacherCourseAllocations
+        var alreadyAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
             .AnyAsync(a => a.TeacherId == request.TeacherId && a.CourseId == request.CourseId, ct);
 
         if (alreadyAllocated)
@@ -78,7 +78,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
             Status = TeacherCourseAllocationStatus.Active
         };
 
-        unitOfWork.Context.TeacherCourseAllocations.Add(allocation);
+        await unitOfWork.TeacherCourseAllocationRepo.Add(allocation);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new CourseTeacherResponse
@@ -93,7 +93,7 @@ public class TeacherCourseAllocationService(IUnitOfWork unitOfWork) : ITeacherCo
 
     public async Task<bool> SetTeacherCourseAllocationStatusAsync(Guid allocationId, SetAllocationStatusRequest request, CancellationToken ct = default)
     {
-        var allocation = await unitOfWork.Context.TeacherCourseAllocations
+        var allocation = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
             .SingleOrDefaultAsync(a => a.Id == allocationId, ct);
 
         if (allocation is null)

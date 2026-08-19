@@ -10,7 +10,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 {
     public async Task<List<AssignmentResponse>> GetAssignmentsAsync(Guid userId, UserRole role, Guid? courseIdFilter, CancellationToken ct = default)
     {
-        var query = unitOfWork.Context.Assignments
+        var query = unitOfWork.AssignmentRepo.GetAll()
             .AsNoTracking()
             .Include(a => a.Course)
             .Include(a => a.CreatedBy)
@@ -23,7 +23,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
         if (role == UserRole.Teacher)
         {
-            var allocatedCourseIds = await unitOfWork.Context.TeacherCourseAllocations
+            var allocatedCourseIds = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
                 .Where(tca => tca.TeacherId == userId && tca.Status == TeacherCourseAllocationStatus.Active)
                 .Select(tca => tca.CourseId)
                 .ToListAsync(ct);
@@ -32,7 +32,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
         }
         else if (role == UserRole.Student)
         {
-            var enrolledCourseIds = await unitOfWork.Context.CourseEnrollments
+            var enrolledCourseIds = await unitOfWork.CourseEnrollmentRepo.GetAll()
                 .Where(ce => ce.BatchEnrollment.StudentId == userId
                              && ce.Status == EnrollmentStatus.Active
                              && ce.BatchEnrollment.Status == EnrollmentStatus.Active)
@@ -65,7 +65,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
     public async Task<AssignmentResponse?> GetAssignmentByIdAsync(Guid id, Guid userId, UserRole role, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .AsNoTracking()
             .Include(a => a.Course)
             .Include(a => a.CreatedBy)
@@ -78,7 +78,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
         if (role == UserRole.Teacher)
         {
-            var isAllocated = await unitOfWork.Context.TeacherCourseAllocations
+            var isAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
                 .AnyAsync(tca => tca.TeacherId == userId && tca.CourseId == assignment.CourseId && tca.Status == TeacherCourseAllocationStatus.Active, ct);
 
             if (!isAllocated)
@@ -93,7 +93,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
                 return null;
             }
 
-            var isEnrolled = await unitOfWork.Context.CourseEnrollments
+            var isEnrolled = await unitOfWork.CourseEnrollmentRepo.GetAll()
                 .AnyAsync(ce => ce.CourseId == assignment.CourseId
                                 && ce.BatchEnrollment.StudentId == userId
                                 && ce.Status == EnrollmentStatus.Active
@@ -125,7 +125,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
     public async Task<AssignmentResponse> CreateAssignmentAsync(Guid teacherId, CreateAssignmentRequest request, CancellationToken ct = default)
     {
-        var isAllocated = await unitOfWork.Context.TeacherCourseAllocations
+        var isAllocated = await unitOfWork.TeacherCourseAllocationRepo.GetAll()
             .AnyAsync(tca => tca.TeacherId == teacherId && tca.CourseId == request.CourseId && tca.Status == TeacherCourseAllocationStatus.Active, ct);
 
         if (!isAllocated)
@@ -133,7 +133,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
             throw new UnauthorizedAccessException("Teacher does not have an active allocation to this course.");
         }
 
-        var course = await unitOfWork.Context.Courses
+        var course = await unitOfWork.CourseRepo.GetAll()
             .SingleOrDefaultAsync(c => c.Id == request.CourseId, ct);
 
         if (course is null)
@@ -141,7 +141,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
             throw new InvalidOperationException($"Course with ID '{request.CourseId}' does not exist.");
         }
 
-        var teacher = await unitOfWork.Context.Users
+        var teacher = await unitOfWork.UserRepo.GetAll()
             .SingleOrDefaultAsync(u => u.Id == teacherId, ct);
 
         var assignment = new Assignment
@@ -157,7 +157,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
             AllowResubmission = request.AllowResubmission
         };
 
-        unitOfWork.Context.Assignments.Add(assignment);
+        await unitOfWork.AssignmentRepo.Add(assignment);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new AssignmentResponse
@@ -180,7 +180,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
     public async Task<AssignmentResponse?> UpdateAssignmentAsync(Guid id, Guid teacherId, UpdateAssignmentRequest request, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .Include(a => a.Course)
             .Include(a => a.CreatedBy)
             .SingleOrDefaultAsync(a => a.Id == id, ct);
@@ -197,7 +197,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
         if (assignment.Status == AssignmentStatus.Published)
         {
-            var hasSubmissions = await unitOfWork.Context.Submissions
+            var hasSubmissions = await unitOfWork.SubmissionRepo.GetAll()
                 .AnyAsync(s => s.AssignmentId == id, ct);
 
             if (hasSubmissions)
@@ -234,7 +234,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
     public async Task<bool> PublishAssignmentAsync(Guid id, Guid teacherId, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .SingleOrDefaultAsync(a => a.Id == id, ct);
 
         if (assignment is null)
@@ -254,7 +254,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
     public async Task<bool> CloseSubmissionsAsync(Guid id, Guid teacherId, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .SingleOrDefaultAsync(a => a.Id == id, ct);
 
         if (assignment is null)
@@ -274,7 +274,7 @@ public class AssignmentService(IUnitOfWork unitOfWork) : IAssignmentService
 
     public async Task<bool> DeleteAssignmentAsync(Guid id, Guid teacherId, CancellationToken ct = default)
     {
-        var assignment = await unitOfWork.Context.Assignments
+        var assignment = await unitOfWork.AssignmentRepo.GetAll()
             .SingleOrDefaultAsync(a => a.Id == id, ct);
 
         if (assignment is null)
