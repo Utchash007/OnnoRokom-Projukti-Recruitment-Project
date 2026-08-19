@@ -52,7 +52,7 @@ The **Assignment & Submission Management System** streamlines academic workflows
 ### 🗄️ Database & Storage
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
 - **ORM**: Entity Framework Core (EF Core with Npgsql provider)
-- **Migrations**: Automated EF Core Code-First Migrations
+- **Migrations**: EF Core Code-First migrations applied with `dotnet ef database update`
 - **File Storage**: Relational binary file data (`bytea`) with MIME validation and 10MB upload limits
 
 ---
@@ -80,22 +80,23 @@ graph LR
 
 ### ⚙️ Backend Architectural Patterns
 
-1. **Generic Repository Pattern (`IRepository<TEntity, in TKey>`)**:
-   - **Purpose**: Provides a standardized, reusable contract for common data access operations (`GetByIdAsync`, `GetAllAsync`, `AddAsync`, `Update`, `Delete`, `ExistsAsync`) across all database entities.
-   - **Benefit**: Eliminates boilerplate query logic, decouples entity mapping from the database provider, and ensures consistent querying patterns across all domain models.
+1. **Generic Repository Pattern (`IRepository<TEntity>`)**:
+   - **Purpose**: Provides a standardized contract for common data access operations (`Get`, `GetAll`, `Add`, `Update`, and `Delete`) across all database entities.
+   - **Benefit**: Keeps service persistence access behind a reusable repository abstraction while still allowing services to compose complex LINQ queries from `GetAll()`.
 
-2. **Repository Abstraction (`EFRepository<TEntity, TKey>`)**:
-   - **Purpose**: Encapsulates Entity Framework Core queries and entity tracking.
-   - **Benefit**: Prevents raw database access logic from leaking into business services, enabling clean unit testing, mocking, and maintainability.
+2. **Repository Abstraction (`EFRepository<TEntity>`)**:
+   - **Purpose**: Implements the generic repository over the shared EF Core `AppDbContext`; entity keys are `Guid` values in this project.
+   - **Benefit**: Prevents services from accessing `AppDbContext` directly and centralizes entity tracking operations.
 
 3. **Unit of Work Pattern (`IUnitOfWork` / `UnitOfWork`)**:
-   - **Purpose**: Manages database transactions and coordinates work across multiple repositories sharing a single `AppDbContext` instance.
-   - **Benefit**: Guarantees **ACID transaction atomicity**. Complex operations (such as enrolling an entire student batch cohort, creating assignments with attachments, or cascading status changes) either succeed completely with a single `SaveChangesAsync()` call or rollback cleanly on any failure without leaving orphan records.
+   - **Purpose**: Exposes an explicit `XRepo` property for every entity repository, with all repositories sharing one scoped `AppDbContext` instance.
+   - **Benefit**: Services use `IUnitOfWork.UserRepo`, `IUnitOfWork.CourseRepo`, `IUnitOfWork.AssignmentRepo`, and so on, then persist tracked changes through one `SaveChangesAsync()` call.
+   - **Scope**: The current Unit of Work does not expose explicit `BeginTransaction`, `Commit`, or `Rollback` methods; EF Core handles the normal transaction for an individual `SaveChangesAsync()` operation.
 
 4. **Layered Service-Oriented Architecture**:
    - **Controllers**: Handle HTTP verbs, route bindings, model validation, and map results to standard HTTP status codes (`200 OK`, `201 Created`, `204 NoContent`, `400 BadRequest`, `401 Unauthorized`, `403 Forbidden`, `404 NotFound`).
    - **Business Services**: Enforce institutional rules, deadline checks, role constraints, and qualitative feedback validations.
-   - **Global Exception Middleware**: Intercepts unhandled exceptions and formats uniform RFC 7807 `ProblemDetails` error payloads.
+    - **Global Exception Middleware**: Handles exceptions raised during controller/service execution and formats uniform RFC 7807 `ProblemDetails` error payloads.
 
 ---
 
@@ -253,7 +254,7 @@ graph TD
 ## 🚀 Local Setup & Installation Instructions
 
 ### Prerequisites
-- [.NET 9.0 SDK or .NET 10.0 SDK](https://dotnet.microsoft.com/download)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 20+ and npm](https://nodejs.org/)
 - [PostgreSQL 14+](https://www.postgresql.org/download/)
 
@@ -290,8 +291,8 @@ graph TD
    dotnet run
    ```
    The backend API will start on `http://localhost:5000` (or `https://localhost:5001`).
-   - Swagger Documentation: `http://localhost:5000/swagger`
-   - Database seeder will automatically provision demo accounts on first run!
+    - Interactive API Reference: `http://localhost:5000/scalar/v1` (the `/swagger` path redirects there)
+    - Apply migrations before starting the API; startup seeding provisions demo accounts only after the schema exists.
 
 ---
 
@@ -351,7 +352,7 @@ dotnet build    # Verifies compilation across all models, services, and controll
    - An administrator then enrolls batch members into catalog `Courses`.
    - Assignments are created at the `Course` level, allowing all active students enrolled in that course to view and submit deliverables regardless of section.
 2. **File Storage Architecture**:
-   - Submissions support multiple file attachments stored directly as byte streams (`bytea`) with associated MIME metadata, ensuring atomic transaction handling and simplified backup procedures.
+   - Submissions support multiple file attachments stored directly as byte streams (`bytea`) with associated MIME metadata. This keeps file metadata and bytes in PostgreSQL, although uploads are separate requests and are not one transaction with answer submission.
 3. **Submission Revision Policy**:
    - Each assignment includes an `allowResubmission` boolean flag. If enabled, students can update their written response or attach additional files before the deadline.
 4. **Submissions Close Action**:
